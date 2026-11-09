@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Бонечка и аутентификация вечности</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Бонечка">
+<meta name="theme-color" content="#2a2340">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2e3b5e; --muted:#6b7695; --sky:#6f8fd1; --sky2:#9db6ea; --gold:#d9a93b;
+    --warn:#b9553c; --ok:#3b8a57; --paper:rgba(255,255,255,.93);
+    --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#2a2340;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;color:var(--ink)}
+  body{position:fixed;inset:0;display:flex;justify-content:center}
+  #app{position:relative;height:100%;width:min(100vw, calc(100dvh * .5625));min-width:320px;overflow:hidden;
+    user-select:none;-webkit-user-select:none;touch-action:manipulation;background:#cfdcf5}
+  @supports not (height:100dvh){#app{width:min(100vw, calc(100vh * .5625))}}
+  button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+
+  .screen{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .55s ease}
+  .screen.on{opacity:1;pointer-events:auto}
+  .bg{position:absolute;inset:0;background-size:cover;background-position:center}
+
+  /* Title */
+  #title .card{position:absolute;left:6%;right:6%;top:calc(var(--st) + 7%);padding:22px 20px 20px;text-align:center;
+    background:rgba(255,255,255,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:22px;
+    box-shadow:0 10px 30px rgba(60,80,140,.18)}
+  #title .logo{width:78px;display:block;margin:0 auto 6px}
+  h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:34px;line-height:1.02;margin:4px 0 10px;letter-spacing:.2px}
+  .sub{font-size:13.5px;color:var(--muted);line-height:1.4;margin:0 0 16px}
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:14px 16px;font-size:16px;font-weight:600;margin-top:10px;
+    background:#e9eefa;color:var(--ink);box-shadow:inset 0 0 0 1px rgba(80,110,180,.18)}
+  .btn.primary{background:linear-gradient(180deg,#7f9ddc,#5f80c8);color:#fff;box-shadow:0 4px 12px rgba(80,110,190,.35)}
+  .btn.ghost{background:transparent;color:#9aa3bb;box-shadow:inset 0 0 0 1px rgba(150,160,190,.35)}
+  .btn:active{transform:scale(.98)}
+  .linkbtn{background:none;border:0;color:var(--sky);font-size:14px;margin-top:12px;text-decoration:underline;text-underline-offset:3px}
+
+  /* Day card */
+  #daycard .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(30,40,80,.86),rgba(40,40,90,.92))}
+  #daycard .in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;
+    color:#fff;padding:30px}
+  #daycard .day{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(30px,10.5vw,44px);font-weight:700;letter-spacing:2px;text-transform:uppercase}
+  #daycard .task{margin-top:14px;font-size:16px;opacity:.92}
+  #daycard .task b{color:#f2d27e;font-weight:600}
+  #daycard .tap{position:absolute;bottom:calc(var(--sb) + 40px);font-size:13px;opacity:.6;animation:breathe 2s ease-in-out infinite}
+  @keyframes breathe{50%{opacity:.25}}
+
+  /* Desk HUD */
+  .hud{position:absolute;left:0;right:0;top:0;padding:calc(var(--st) + 10px) 12px 0;display:flex;justify-content:space-between;align-items:center;z-index:5}
+  .pill{background:rgba(255,255,255,.85);border-radius:999px;padding:7px 12px;font-size:13px;box-shadow:0 2px 8px rgba(60,80,140,.15);
+    display:flex;gap:6px;align-items:baseline;border:0}
+  .pill b{font-variant-numeric:tabular-nums;font-size:14px}
+  .pill.mort{position:relative}
+  .float{position:absolute;left:50%;top:100%;transform:translateX(-50%);color:var(--warn);font-weight:700;font-size:14px;white-space:nowrap;
+    animation:floatup 1.6s ease-out forwards;pointer-events:none}
+  @keyframes floatup{0%{opacity:0;transform:translate(-50%,0)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,26px)}}
+  .count{display:inline-block;min-width:18px;padding:1px 6px;border-radius:9px;background:#e9eefa;font-size:12px}
+  .count.bump{animation:bump .5s}
+  @keyframes bump{40%{transform:scale(1.35);background:#f2d27e}}
+
+  #wing{position:absolute;left:2%;top:65%;width:31%;height:22%;z-index:2;border:0;background:transparent}
+
+  /* System window */
+  #win{position:absolute;left:4.5%;right:4.5%;top:calc(var(--st) + 58px);max-height:calc(100% - var(--st) - 58px - 190px);overflow:auto;
+    background:var(--paper);border-radius:16px;box-shadow:0 14px 40px rgba(50,70,130,.28);z-index:4;
+    opacity:0;transform:translateY(-8px) scale(.98);transition:opacity .3s,transform .3s;pointer-events:none}
+  #win.show{opacity:1;transform:none;pointer-events:auto}
+  .tbar{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:12.5px;font-weight:600;color:#fff;
+    background:linear-gradient(180deg,#8aa6e0,#6888cf);border-radius:16px 16px 0 0;position:sticky;top:0;z-index:2}
+  .tbar img{width:20px;height:20px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+  .wbody{padding:14px 15px 15px;font-size:15px;line-height:1.42}
+  .wbody p{margin:0 0 10px}
+  .muted{color:var(--muted);font-size:13.5px}
+  .field2{margin:0 0 10px}
+  .field2 label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+  .input{background:#f3f6fc;border-radius:10px;padding:10px 12px;font-size:15px;box-shadow:inset 0 0 0 1px rgba(80,110,180,.15)}
+  .notice,.warn,.okmsg{border-radius:12px;padding:10px 12px;margin:0 0 10px;display:flex;gap:9px;align-items:flex-start}
+  .notice{background:#eef2fb}
+  .warn{background:#fbece7;color:#7a3324}
+  .warn b{color:var(--warn);font-size:17px;line-height:1.2}
+  .okmsg{background:#e6f3ea;color:#24563a;font-weight:600}
+  .okmsg::before{content:"✓";display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ok);color:#fff;font-size:12px;flex:none}
+  .okmsg.big{font-size:17px}
+  .pen{font-size:13.5px;color:var(--warn);font-weight:600;margin:0 0 6px}
+  .newbadge{display:inline-block;font-size:12px;background:#f8ebc6;color:#7a5a12;border-radius:8px;padding:3px 8px;margin-bottom:4px}
+  .btns .btn:first-child{margin-top:4px}
+  .note{font-size:13px;color:#7a3324;background:#fbece7;border-radius:10px;padding:8px 10px;margin:8px 0 0}
+
+  /* OTP */
+  .notif{background:#fff;border-radius:14px;box-shadow:0 4px 14px rgba(60,80,140,.16);padding:9px 11px;margin-bottom:10px;
+    animation:drop .45s cubic-bezier(.2,1.3,.4,1)}
+  @keyframes drop{from{transform:translateY(-14px);opacity:0}}
+  .nhead{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .nhead img{width:16px;height:16px;object-fit:contain}
+  .nhead span{margin-left:auto;text-transform:none;font-weight:400}
+  .ntext{font-size:15px;margin-top:3px}
+  .code{display:inline-block;font-size:21px;letter-spacing:5px;font-weight:800;color:#2b4a8f;margin-left:4px;vertical-align:-2px}
+  .code.mirror{transform:scaleX(-1)}
+  .nsub{font-size:12px;color:var(--muted);margin-top:2px}
+  .slots{display:flex;justify-content:center;gap:8px;margin:2px 0 9px}
+  .slots i{font-style:normal;width:40px;height:44px;border-radius:10px;background:#f1f4fb;box-shadow:inset 0 0 0 1.5px rgba(90,120,190,.25);
+    display:grid;place-items:center;font-size:22px;font-weight:800;color:#2b4a8f}
+  .slots i.on{background:#fff;box-shadow:inset 0 0 0 2px #7f9ddc;animation:bump .35s}
+  .timer{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);margin-bottom:8px}
+  .timer span{white-space:nowrap}
+  .bar{flex:1;height:7px;border-radius:5px;background:#edf0f7;overflow:hidden}
+  .bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#e6c25a,#d9783e);animation-name:shrink;animation-timing-function:linear;animation-fill-mode:forwards}
+  @keyframes shrink{from{width:100%}to{width:0}}
+  .field{position:relative;height:250px;border-radius:14px;background:linear-gradient(180deg,#bcd0f3,#dfe8fa);overflow:hidden}
+  .tile{position:absolute;width:62px;height:62px;border:0;border-radius:46% 54% 50% 50%/55% 52% 48% 45%;background:#fff;
+    box-shadow:0 5px 12px rgba(70,100,170,.22), inset 0 -5px 8px rgba(160,185,230,.35);
+    font-size:27px;font-weight:800;color:#2f4f93;animation:drift ease-in-out infinite}
+  @keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(var(--dx),var(--dy))}}
+  .tile.hit{animation:pop .3s forwards;pointer-events:none}
+  @keyframes pop{to{transform:scale(1.4);opacity:0}}
+  .tile.bad{background:#f7d2c8;color:var(--warn);animation:shake .45s}
+  @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+
+  /* Speech */
+  #speech{position:absolute;left:4%;right:4%;bottom:calc(var(--sb) + 14px);z-index:8;background:rgba(255,251,242,.95);border-radius:16px;
+    padding:12px 40px 13px 15px;box-shadow:0 8px 26px rgba(50,40,90,.25);font-size:15.5px;line-height:1.4;
+    opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;pointer-events:none}
+  #speech.show{opacity:1;transform:none;pointer-events:auto}
+  #speech .who{font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#a2803a;margin-bottom:2px}
+  #speech.narr{background:rgba(40,42,80,.82);color:#f3efe6;font-style:italic}
+  #speech .more{position:absolute;right:14px;bottom:10px;font-size:24px;color:#b49350;animation:nudge 1.2s ease-in-out infinite}
+  #speech.narr .more{color:#d9c48f}
+  @keyframes nudge{50%{transform:translateX(4px)}}
+  #speech .opts{display:flex;flex-direction:column;gap:0;margin-top:2px}
+  #speech.choice{padding-right:15px;font-style:normal}
+
+  /* Toast */
+  #toast{position:absolute;left:4%;right:4%;top:calc(var(--st) + 56px);z-index:9;background:#fff;border-radius:14px;padding:11px 13px;
+    box-shadow:0 10px 30px rgba(50,60,110,.3);font-size:14px;line-height:1.38;opacity:0;transform:translateY(-10px);transition:.35s;pointer-events:none}
+  #toast.show{opacity:1;transform:none}
+  #toast .t1{color:#7a3324}
+  #toast .t2{margin-top:6px;color:var(--ink);font-style:italic}
+  #toast .t3{margin-top:4px;font-size:12.5px;color:var(--warn);font-weight:600}
+
+  /* Evening */
+  #evening .bg{filter:blur(2.5px) saturate(.85) brightness(.88);transform:scale(1.04)}
+  #evening .tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,160,110,.42),rgba(190,110,150,.34) 45%,rgba(70,45,100,.45))}
+  .vlad{position:absolute;left:50%;bottom:calc(var(--sb) + 19%);width:74%;transform:translateX(-50%);aspect-ratio:620/771;transition:width .6s ease,bottom .6s ease}
+  #evening.ended .vlad{width:50%;bottom:calc(var(--sb) + 3%)}
+  .vlad img{position:absolute;display:block}
+  .vlad .vbody{left:0;bottom:0;width:100%}
+  .vlad .vbottle{left:30.7%;top:0;width:37%;animation:bob 4s ease-in-out infinite;transform-origin:50% 100%}
+  @keyframes bob{50%{transform:translateY(-1.5px) rotate(.6deg)}}
+  .vlad::after{content:"";position:absolute;inset:-10%;background:radial-gradient(closest-side,rgba(255,220,170,.35),transparent);z-index:-1}
+
+  #endcard{position:absolute;left:6%;right:6%;top:calc(var(--st) + 8%);background:rgba(255,255,255,.9);border-radius:20px;padding:20px 18px 16px;
+    text-align:center;box-shadow:0 14px 40px rgba(50,40,90,.3);z-index:6;opacity:0;transform:translateY(-8px);transition:.4s;pointer-events:none}
+  #endcard.show{opacity:1;transform:none;pointer-events:auto}
+  #endcard h2{font-family:"Cormorant Garamond",Georgia,serif;font-size:30px;margin:0 0 10px}
+  .stat{display:flex;justify-content:space-between;font-size:14.5px;padding:7px 2px;border-top:1px solid rgba(80,100,160,.12)}
+  .stat b{font-variant-numeric:tabular-nums}
+  .quote{font-style:italic;margin:12px 0 4px;font-size:15.5px}
+  .next{font-size:12.5px;color:var(--muted);margin-top:12px}
+
+  /* Archive */
+  #archive{position:absolute;inset:0;z-index:20;background:rgba(30,30,60,.55);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:.3s}
+  #archive.show{opacity:1;pointer-events:auto}
+  #archive .sheet{width:100%;max-height:86%;background:#fbfaf6;border-radius:20px 20px 0 0;padding:16px 16px calc(var(--sb) + 16px);overflow:auto;
+    transform:translateY(30px);transition:.3s}
+  #archive.show .sheet{transform:none}
+  #archive h3{margin:0;font-family:"Cormorant Garamond",Georgia,serif;font-size:26px}
+  #archive .who2{font-size:12.5px;color:var(--muted);margin:2px 0 12px}
+  .entry{background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(60,70,120,.1);font-size:14px;line-height:1.38}
+  .entry .es{color:#7a3324}
+  .entry .ea{margin-top:5px;font-style:italic}
+  .entry .ey{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .entry.locked{background:#f1f0eb;color:#a3a3a8;box-shadow:none;font-style:italic}
+  .arch-day{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#a2803a;margin:14px 2px 6px}
+
+  /* Day chips */
+  .days{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+  .chip{border:0;border-radius:999px;padding:6px 11px;font-size:13px;background:#e9eefa;color:var(--ink)}
+  .chip.cur{background:#5f80c8;color:#fff}
+  .chip:disabled{opacity:.4}
+
+  /* Appearance check */
+  .reg{background:#fffdf5;border-radius:12px;padding:9px 10px 8px;box-shadow:inset 0 0 0 1.5px #e6cf8f;margin-bottom:10px;position:relative}
+  .reg.flash{animation:regflash 1.2s}
+  @keyframes regflash{0%,40%{box-shadow:inset 0 0 0 3px #d9783e;background:#fff1e3}}
+  .reg .rh{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#8a6a24}
+  .reg .rd{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .reg .icons{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .ri{width:52px;text-align:center;font-size:10px;line-height:1.15;color:var(--ink)}
+  .ri .ib{width:44px;height:44px;margin:0 auto 2px;border-radius:10px;background:#f4f6fc;display:grid;place-items:center;position:relative}
+  .ri img{width:36px;height:36px;object-fit:contain}
+  .ri.no .ib::after{content:"";position:absolute;inset:4px;border:3px solid #c0573e;border-radius:50%;
+    background:linear-gradient(45deg,transparent 46%,#c0573e 46%,#c0573e 54%,transparent 54%)}
+  .ri.no{color:#a24a33}
+  .updated{position:absolute;right:8px;top:8px;font-size:10.5px;font-weight:700;color:#fff;background:#d9783e;border-radius:6px;padding:2px 6px}
+  .inv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 2px}
+  .it{position:relative;border:0;border-radius:12px;background:#f3f6fc;padding:7px 4px 6px;font-size:11.5px;line-height:1.15;
+    box-shadow:inset 0 0 0 1.5px rgba(90,120,190,.15);min-height:96px}
+  .it img{width:54px;height:54px;object-fit:contain;display:block;margin:0 auto 4px}
+  .it.sel{background:#fff;box-shadow:inset 0 0 0 2.5px #6f8fd1}
+  .it.sel::after{content:"✓";position:absolute;right:5px;top:5px;width:18px;height:18px;border-radius:50%;background:#6f8fd1;color:#fff;
+    font-size:11px;display:grid;place-items:center}
+  .it.na{opacity:.5}
+  .it.nope{animation:shake .4s}
+  .it.na small{display:block;color:var(--warn);font-size:9.5px;margin-top:2px}
+  .it.got small{display:block;color:var(--ok);font-size:9.5px;margin-top:2px}
+  .hint{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+  .scanning{position:relative;height:120px;border-radius:12px;background:linear-gradient(180deg,#dbe6fa,#eef3fd);overflow:hidden;margin-bottom:6px;
+    display:grid;place-items:center;font-size:13px;color:var(--muted)}
+  .scanning::before{content:"";position:absolute;left:0;right:0;height:3px;background:#7f9ddc;box-shadow:0 0 14px 4px rgba(127,157,220,.6);
+    animation:sweep 1.3s ease-in-out infinite alternate}
+  @keyframes sweep{from{top:6%}to{top:92%}}
+  .scanning .row{display:flex;gap:6px}
+  .scanning .row img{width:34px;height:34px;object-fit:contain}
+  .cm{display:block;width:62%;margin:0 auto 8px;cursor:pointer}
+  .cm.wob{animation:wob .5s}
+  @keyframes wob{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+  .progress{height:8px;border-radius:5px;background:#edf0f7;overflow:hidden;margin:4px 0 10px}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9db6ea,#5f80c8);transition:width 2.6s linear}
+
+  /* Captcha */
+  .cap{border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px rgba(80,110,180,.18);margin-bottom:4px}
+  .cap-head{background:linear-gradient(180deg,#5a7fcf,#4a6dbd);color:#fff;padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:13.5px;line-height:1.3}
+  .cap-head b{font-size:16.5px}
+  .cap-head img{width:52px;height:52px;object-fit:contain;background:#fff;border-radius:8px;padding:3px;flex:none}
+  .cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#fff;padding:4px}
+  .ct{position:relative;border:0;padding:0;aspect-ratio:1/1;overflow:hidden;background:#e8edf7;border-radius:3px}
+  .ct img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .15s}
+  .ct.sel img{transform:scale(.8)}
+  .ct.sel{background:#d7e2f7}
+  .ct.sel::after{content:"✓";position:absolute;left:4px;top:4px;width:22px;height:22px;border-radius:50%;background:#4a6dbd;color:#fff;
+    font-size:13px;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
+  .cap-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;padding:6px 6px 8px;font-size:11.5px;color:var(--muted)}
+  .cap-foot .btn{width:auto;margin:0;padding:10px 18px;font-size:15px}
+  .demon{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:12px;background:#f7f8fb;padding:14px;font-size:16px;
+    box-shadow:inset 0 0 0 1.5px rgba(80,110,180,.2);text-align:left}
+  .demon i{width:26px;height:26px;border-radius:5px;background:#fff;box-shadow:inset 0 0 0 2px #9aa8c6;flex:none}
+  .demon small{margin-left:auto;font-size:10px;color:var(--muted);text-align:right;line-height:1.2}
+  .reason .btn{text-align:left}
+
+  /* Check counter */
+  .tbar .chk{margin-left:auto;background:rgba(255,255,255,.25);border-radius:8px;padding:1px 7px;font-variant-numeric:tabular-nums}
+
+  /* Finale */
+  #scene .pan{position:absolute;inset:0;background-size:auto 100%;background-repeat:no-repeat;background-position:100% 50%;
+    transition:background-position 3s ease-in-out}
+  #scene .vign{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(30,20,50,.45))}
+  #final .bg{filter:blur(18px) brightness(.85) saturate(1.1);transform:scale(1.15)}
+  #final .art{position:absolute;left:0;right:0;top:calc(var(--st) + 74px);width:100%;aspect-ratio:1000/1250;object-fit:cover;
+    box-shadow:0 10px 40px rgba(30,20,60,.35)}
+  @media (max-aspect-ratio: 10/19){#final .art{top:calc(var(--st) + 84px)}}
+  #final .shade{position:absolute;inset:0;background:rgba(30,25,55,0);transition:background 1s}
+  #final.ended .shade{background:rgba(30,25,55,.45)}
+  .ktoast{position:absolute;z-index:6;background:rgba(255,255,255,.95);border-radius:12px;box-shadow:0 8px 22px rgba(40,40,90,.25);
+    display:flex;align-items:center;gap:9px;font-size:14.5px;color:#22325c;padding:10px 12px;opacity:0;transform:translateY(-8px);transition:.6s}
+  .ktoast.show{opacity:1;transform:none}
+  .ktoast.ok{left:5%;right:5%;top:calc(var(--st) + 16px)}
+  .ktoast.ok i{width:24px;height:24px;border-radius:50%;background:#4aa36b;color:#fff;display:grid;place-items:center;font-style:normal;font-size:14px;flex:none}
+  .ktoast.info{right:5%;left:22%;bottom:calc(var(--sb) + 150px)}
+  .ktoast.info i{width:24px;height:24px;border-radius:50%;background:#3d6fc6;color:#fff;display:grid;place-items:center;font-style:italic;font-weight:700;font-family:Georgia,serif;flex:none}
+  .ktoast.info b{margin-left:auto;font-weight:400;color:#8a90a6;border:1px solid #c9cfdd;border-radius:4px;padding:0 5px;font-size:12px}
+  #weekcard{position:absolute;left:6%;right:6%;top:calc(var(--st) + 7%);background:rgba(255,255,255,.93);border-radius:20px;padding:20px 18px 16px;
+    text-align:center;box-shadow:0 14px 40px rgba(40,30,80,.35);z-index:7;opacity:0;transform:translateY(-8px);transition:.5s;pointer-events:none}
+  #weekcard.show{opacity:1;transform:none;pointer-events:auto}
+  #weekcard h2{font-family:"Cormorant Garamond",Georgia,serif;font-size:30px;margin:0 0 4px}
+  #weekcard .wsub{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+  #weekcard .epi{font-size:13.5px;font-style:italic;color:#5b4a7a;margin:10px 0 2px}
+
+  /* Fullscreen button */
+  #fsBtn{position:absolute;left:12px;bottom:calc(var(--sb) + 150px);z-index:15;width:40px;height:40px;border:0;border-radius:12px;
+    background:rgba(255,255,255,.72);box-shadow:0 3px 10px rgba(40,40,80,.25);display:none;place-items:center;font-size:18px;color:#3a4c7c}
+  #fsBtn.avail{display:grid}
+  #fsBtn svg{width:20px;height:20px}
+
+  /* Mom */
+  #mom{position:absolute;left:5%;right:5%;top:calc(var(--st) + 170px);z-index:11;background:rgba(252,251,253,.98);border-radius:16px;padding:10px 10px 10px 12px;
+    box-shadow:0 14px 36px rgba(40,30,80,.38);display:flex;gap:10px;align-items:center;touch-action:pan-y;opacity:0;pointer-events:none;
+    transform:translateY(-12px);transition:transform .28s,opacity .28s}
+  #mom.show{opacity:1;pointer-events:auto;transform:none}
+  #mom.dragging{transition:none}
+  #mom .av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f5b0bf,#e57a93);color:#fff;font-weight:700;font-size:16px;display:grid;place-items:center;flex:none}
+  #mom .mb{flex:1;min-width:0}
+  #mom .mn{font-size:11.5px;color:var(--muted);font-weight:700;display:flex;justify-content:space-between}
+  #mom .mt{font-size:15.5px;line-height:1.3;margin-top:1px}
+  #mom .mh{font-size:10.5px;color:#a6abbd;margin-top:3px}
+  #mom .mx{border:0;background:#eceef4;border-radius:50%;width:30px;height:30px;font-size:13px;flex:none;color:#7a8099}
+  #mom.esc{animation:shake .4s}
+
+  /* Payment */
+  .sess{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted)}
+  .sess b{font-variant-numeric:tabular-nums;color:var(--warn);font-size:16px}
+  .sbar{margin:4px 0 12px}
+  .btn.off{opacity:.45}
+  .demon.on i{background:#5f80c8;box-shadow:none;position:relative}
+  .demon.on i::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:15px}
+  .sched{height:210px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#f6f8fc;border-radius:10px;padding:2px 10px;font-size:12px;
+    font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1px rgba(80,110,180,.14);user-select:none}
+  .sched div{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid rgba(80,100,160,.08)}
+  .sched .gap{justify-content:center;color:var(--muted);font-style:italic;padding:12px 0}
+  .sched .tot{font-weight:700;border-bottom:0;padding:10px 0}
+
+  /* Postcard */
+  #postcard{position:absolute;left:8%;width:84%;top:calc(var(--st) + 12%);border-radius:10px;box-shadow:0 18px 40px rgba(40,30,70,.45);
+    transform:rotate(-4deg) translateY(-20px) scale(.95);opacity:0;transition:.5s;pointer-events:none;z-index:5}
+  #postcard.show{opacity:1;transform:rotate(-4deg)}
+  #lida{position:absolute;left:6%;width:88%;top:calc(var(--st) + 10%);border-radius:14px;box-shadow:0 18px 40px rgba(40,30,70,.45);
+    transform:translateY(-16px) scale(.96);opacity:0;transition:.6s;pointer-events:none;z-index:5}
+  #lida.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="title" class="screen on">
+    <div class="bg" style="background-image:url(assets/bg_empty.webp)"></div>
+    <div class="card">
+      <img class="logo" src="assets/logo.webp" alt="">
+      <h1>Бонечка и аутентификация вечности</h1>
+      <p class="sub">Рабочая неделя в Административном Органе Высшего Небесного Престола</p>
+      <button class="btn primary" id="startBtn">Начать рабочий день</button>
+      <div class="days" id="dayChips"></div>
+      <button class="linkbtn" id="titleArchive">Личное дело <span class="count" data-count>0</span></button>
+    </div>
+  </section>
+
+  <section id="daycard" class="screen">
+    <div class="bg" style="background-image:url(assets/bg_empty.webp)"></div>
+    <div class="shade"></div>
+    <div class="in">
+      <div class="day" id="dayName">Понедельник</div>
+      <div class="task">Задача дня: <b id="dayTask">войти в личный кабинет</b></div>
+      <div class="tap">Нажмите, чтобы начать</div>
+    </div>
+  </section>
+
+  <section id="desk" class="screen">
+    <div class="bg" style="background-image:url(assets/bg_desk.webp)"></div>
+    <div class="hud">
+      <div class="pill mort">Ипотека <b id="years">20 000</b> лет</div>
+      <button class="pill" id="deskArchive">Личное дело <span class="count" data-count>0</span></button>
+    </div>
+    <button id="wing" aria-label="Крыло"></button>
+    <div id="win"></div>
+  </section>
+
+  <section id="evening" class="screen">
+    <div class="bg" style="background-image:url(assets/bg_evening.webp)"></div>
+    <div class="tint"></div>
+    <div class="vlad">
+      <img class="vbody" src="assets/vladimir_empty.webp" alt="Кулер Владимир">
+      <img class="vbottle" id="vbottle" src="assets/bottle_1.webp" alt="Бутыль">
+    </div>
+    <img id="postcard" src="assets/postcard.webp" alt="Открытка от мамы">
+    <img id="lida" src="assets/lida.webp" alt="Имя на бутыли">
+    <div id="endcard"></div>
+  </section>
+
+  <section id="scene" class="screen"><div class="pan" id="pan" style="background-image:url(assets/replace.webp)"></div><div class="vign"></div></section>
+  <section id="final" class="screen">
+    <div class="bg" style="background-image:url(assets/final.webp)"></div><img class="art" src="assets/final.webp" alt="Владимир наливает Ангелу воду"><div class="shade"></div>
+    <div class="ktoast ok" id="kt1"><i>✓</i>Получение жидкости успешно завершено.</div>
+    <div class="ktoast info" id="kt2"><i>i</i>+1 к чему-то очень неважному<b>✕</b></div>
+    <div id="weekcard"></div>
+  </section>
+  <div id="mom"><div class="av">М</div><div class="mb"><div class="mn"><span>Мама</span><span>сейчас</span></div><div class="mt"></div><div class="mh">смахните, чтобы закрыть</div></div><button class="mx" aria-label="Закрыть">✕</button></div>
+  <button id="fsBtn" aria-label="Полноэкранный режим"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <div id="speech"></div>
+  <div id="toast"></div>
+  <div id="archive"><div class="sheet"></div></div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const fmt = n => n.toLocaleString('ru-RU');
+  const LOGO = 'assets/logo.webp';
+
+  // ---------- Notifications archive ----------
+  const MSG = [
+    { id:'t1', type:'timeout', sys:'Срок действия кода истёк. Код прожил короткую, но насыщенную жизнь.', angel:'Я почти успел. Это тоже считается? Нет.', years:10 },
+    { id:'t2', type:'timeout', sys:'Обнаружена нерешительность. Система ценит вашу вдумчивость и продлевает её на 10 лет.', angel:'Ничего. Вечность длинная.', years:10 },
+    { id:'t3', type:'timeout', sys:'Код аннулирован по истечении срока. Новый код уже в пути. Он тоже ненадолго.', angel:'Они все ненадолго.', years:10 },
+    { id:'w1', type:'wrong', sys:'Введённый код не совпадает. Ваша попытка зарегистрирована и будет учтена.', angel:'Я помню код. Кажется. Нет, это был прошлый код.', years:10 },
+    { id:'w2', type:'wrong', sys:'Ошибка ввода. Пожалуйста, не волнуйтесь: волнение также фиксируется.', angel:'Я не нервничаю. Я просто быстро старею внутри.', years:10 },
+    { id:'w3', type:'wrong', sys:'Код отклонён. Возможно, вы — искажённая версия себя. Рекомендуется смирение.', angel:'Я не искажённый. Я просто устал.', years:10 },
+    { id:'w4', type:'wrong', round:2, sys:'Символ распознан как посторонний. Посторонние символы не допускаются в Царствие.', angel:'Это была восьмёрка. Или буква. Они тут все немного буквы.', years:10 },
+    { id:'w5', type:'wrong', round:3, sys:'Зеркальное отражение — не повод для фамильярности. Вводите код как положено.', angel:'Я и вводил как положено. Просто положено было наоборот.', years:10 },
+    { id:'a1', type:'special', sys:'Отказ от соглашения недоступен в вашем тарифе вечности.', angel:'Я не отказывался. Я просто посмотрел.', years:0 },
+    { id:'x1', type:'special', sys:'Использование крыльев вне согласованного сценария зафиксировано и не рекомендовано.', angel:'Я не хотел лететь. Я просто потянулся.', years:100 },
+    // Вторник
+    { id:'o1', day:2, type:'look', sys:'Облик не распознан. Пожалуйста, будьте более похожи на себя.', angel:'Я и так на себя похож. К сожалению.', years:25 },
+    { id:'o2', day:2, type:'look', sys:'Обнаружен лишний элемент облика. Избыточность не поощряется.', angel:'Я просто хотел выглядеть прилично.', years:25 },
+    { id:'o3', day:2, type:'look', sys:'Отсутствует обязательный элемент облика. Неполнота зафиксирована.', angel:'Я неполный. Это многое объясняет.', years:25 },
+    { id:'o4', day:2, type:'look', sys:'Отсутствует стаканчик корпоративного кофе. Сотрудник без кофе вызывает у системы тревогу.', angel:'Кофе дают после проверки. Для проверки нужен кофе. Я понял. Я ничего не понял.', years:25 },
+    { id:'o5', day:2, type:'look', sys:'Бейдж старого образца аннулирован в 11:42. Ношение аннулированного бейджа приравнивается к самозванству.', angel:'Утром он был нового образца.', years:25 },
+    { id:'o6', day:2, type:'look', sys:'Облик соответствует регламенту, утратившему силу. Система ценит вашу верность традициям.', angel:'Я не успел. Регламент успел.', years:25 },
+    { id:'k1', day:2, type:'special', sys:'Ваше нетерпение передано кофемашине. Кофемашина оскорблена.', angel:'Я просто погладил.', years:0 },
+    // Среда
+    { id:'v1', day:3, type:'special', sys:'Основание «усталость» не предусмотрено. В АОВНП не устают, а временно недоблаженствуют.', angel:'Тогда я временно недоблаженствую. Очень.', years:0 },
+    { id:'v2', day:3, type:'special', sys:'Уведомление о семейных обстоятельствах направлено вашей маме.', angel:'Нет. Нет-нет-нет. Отмените. Пожалуйста.', years:0 },
+    { id:'c1', day:3, type:'cap', sys:'Выбранные облака не разделяют ценности компании.', angel:'Они просто облака. Как и я.', years:50 },
+    { id:'c2', day:3, type:'cap', sys:'Не все облака, разделяющие ценности компании, были отмечены. Облака огорчены.', angel:'Я не хотел никого огорчать.', years:50 },
+    { id:'b1', day:3, type:'cap', sys:'Искреннее блаженство не подтверждено ни у одного из отмеченных сотрудников.', angel:'Но они же улыбаются. А. Я тоже улыбаюсь.', years:50 },
+    { id:'b2', day:3, type:'cap', sys:'Массовое блаженство не подтверждено. Пожалуйста, будьте реалистичнее.', angel:'Я старался мыслить позитивно.', years:50 },
+    { id:'g1', day:3, type:'cap', sys:'Не все крылья учтены. В АОВНП каждое крыло на счету.', angel:'Я не заметил. Они так хорошо прикованы.', years:50 },
+    { id:'s1', day:4, type:'session', sys:'Ваша сессия завершена по соображениям высшей безопасности.', angel:'Я почти заплатил. Почти не считается.', years:100 },
+    { id:'s2', day:4, type:'session', sys:'Сессия истекла. Время, проведённое в сессии, не засчитывается в вечность.', angel:'Жаль. Его было немного.', years:100 },
+    { id:'s3', day:4, type:'session', sys:'Сессия прервана из-за бездействия. Чтение графика платежей не является действием.', angel:'Я читал. Это было действие. Внутреннее.', years:100 },
+    { id:'m1', day:4, type:'special', sys:'Сообщение от абонента «Мама» доставлено и прочитано. Абонент уведомлён.', angel:'Теперь она знает. Теперь всё.', years:0 },
+    { id:'m2', day:4, type:'special', sys:'Кнопка станет активной после ознакомления. Ознакомление станет возможным после прокрутки. Прокрутка не гарантирует ознакомления.', angel:'Я прокручу. Но не ознакомлюсь.', years:0 },
+    { id:'f1', day:5, type:'special', sys:'Запрошенный объём превышает норму блаженства отдела гидратации.', angel:'Я хотел, чтобы ему хватило подольше.', years:0 },
+    { id:'f2', day:5, type:'special', sys:'Сомнение зафиксировано. Пожалуйста, определитесь, являетесь ли вы бутылью, до окончания сессии.', angel:'Я просто давно ничего не пил, кроме воды.', years:0 },
+    { id:'g2', day:3, type:'cap', sys:'Крылья прикованного принтера также являются крыльями. Цепь не отменяет принадлежности.', angel:'Я думал, ему уже можно не считаться.', years:50 },
+  ];
+  MSG.forEach(m => { if (!m.day) m.day = 1; });
+  const byId = Object.fromEntries(MSG.map(m => [m.id, m]));
+  const DAYS = {
+    1: { name: 'Понедельник', task: 'войти в личный кабинет', acc: 'понедельник', to: 'к понедельнику', fin: 'завершён' },
+    2: { name: 'Вторник', task: 'получить кофе', acc: 'вторник', to: 'ко вторнику', fin: 'завершён' },
+    3: { name: 'Среда', task: 'согласовать отпуск', acc: 'среду', to: 'к среде', fin: 'завершена' },
+    4: { name: 'Четверг', task: 'оплатить ипотечный взнос', acc: 'четверг', to: 'к четвергу', fin: 'завершён' },
+    5: { name: 'Пятница', task: 'заказать воду для Владимира', acc: 'пятницу', to: 'к пятнице', fin: 'завершена' },
+  };
+  const LAST_DAY = 5;
+  const BOTTLE = { 1: 1, 2: 2, 3: 3, 4: 3, 5: 4 };
+  const NEXT_NOTE = 'Пятница: заказать воду для Владимира. Скоро.';
+  const KEY = 'bonechka.archive.v1', PKEY = 'bonechka.progress.v1';
+  const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const seen = new Set(load(KEY, []));
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...seen])); } catch (e) {} };
+  const P = Object.assign({ done: 0, end: {} }, load(PKEY, {}));
+  const saveP = () => { try { localStorage.setItem(PKEY, JSON.stringify(P)); } catch (e) {} };
+
+  const S = { day: 1, years: 20000, dayStart: 20000, wingDone: false, busy: false, hasCup: false };
+
+  function refreshCounts(bump) {
+    document.querySelectorAll('[data-count]').forEach(c => {
+      c.textContent = seen.size;
+      if (bump) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+    });
+  }
+  function record(id) {
+    const isNew = !seen.has(id);
+    seen.add(id); save(); refreshCounts(isNew);
+    return isNew;
+  }
+  function pickMsg(type, round) {
+    const pool = MSG.filter(m => m.type === type && (!m.round || m.round === round));
+    const special = pool.filter(m => m.round === round && !seen.has(m.id));
+    if (special.length) return special[0];
+    const fresh = pool.filter(m => !m.round && !seen.has(m.id));
+    if (fresh.length) return pick(fresh);
+    return pick(pool);
+  }
+
+  // ---------- Mortgage ----------
+  let yearsAnim = 0;
+  function setYearsText(v) { $('#years').textContent = fmt(Math.round(v)); }
+  function addYears(n) {
+    if (!n) return;
+    const from = S.years; S.years += n;
+    const to = S.years, t0 = performance.now(), id = ++yearsAnim;
+    const step = now => {
+      if (id !== yearsAnim) return;
+      const k = Math.min(1, (now - t0) / 700);
+      setYearsText(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    const f = document.createElement('div');
+    f.className = 'float'; f.textContent = `+${n} лет`;
+    $('.pill.mort').appendChild(f);
+    setTimeout(() => f.remove(), 1700);
+  }
+
+  // ---------- Screens & speech ----------
+  async function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+    await sleep(560);
+  }
+  function hush() { const sp = $('#speech'); sp.className = ''; sp.onclick = null; }
+  function say(text, { tap = false, who = 'Ангел' } = {}) {
+    const sp = $('#speech');
+    sp.className = 'show' + (who ? '' : ' narr');
+    sp.innerHTML = (who ? `<div class="who">${who}</div>` : '') + `<div class="txt">${text}</div>` + (tap ? '<div class="more">›</div>' : '');
+    sp.onclick = null;
+    if (!tap) return Promise.resolve();
+    return new Promise(res => {
+      setTimeout(() => { sp.onclick = () => { sp.onclick = null; res(); }; }, 250);
+    });
+  }
+  function choose(options, prompt = 'Что сделать?') {
+    const sp = $('#speech');
+    sp.className = 'show choice';
+    sp.onclick = null;
+    sp.innerHTML = `<div class="who">${prompt}</div><div class="opts"></div>`;
+    const box = sp.querySelector('.opts');
+    return new Promise(res => {
+      options.forEach(([key, label]) => {
+        const b = document.createElement('button');
+        b.className = 'btn'; b.textContent = label;
+        b.onclick = e => { e.stopPropagation(); res(key); };
+        box.appendChild(b);
+      });
+    });
+  }
+  let toastT = 0;
+  function toast(m) {
+    const t = $('#toast');
+    t.innerHTML = `<div class="t1">⚠ ${m.sys}</div><div class="t2">Ангел: ${m.angel}</div>${m.years ? `<div class="t3">Срок ипотеки продлён на ${m.years} лет</div>` : ''}`;
+    t.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => t.classList.remove('show'), 5200);
+  }
+
+  // ---------- System window ----------
+  const tbar = (title = 'АОВНП · Личный кабинет') => `<div class="tbar"><img src="${LOGO}" alt=""><span>${title}</span>${S.chk ? `<span class="chk">${S.chk}/12</span>` : ''}</div>`;
+  const setChk = n => { S.chk = n; const c = document.querySelector('#win .tbar .chk'); if (c) c.textContent = `${n}/12`; };
+  function winStep({ title, html, buttons = [] }) {
+    const w = $('#win');
+    w.innerHTML = tbar(title) + `<div class="wbody">${html}<div class="btns"></div></div>`;
+    w.classList.add('show'); w.scrollTop = 0;
+    if (!buttons.length) return Promise.resolve();
+    const box = w.querySelector('.btns');
+    return new Promise(res => {
+      buttons.forEach(([label, kind, key]) => {
+        const b = document.createElement('button');
+        b.className = 'btn ' + (kind || ''); b.textContent = label;
+        b.onclick = () => res(key || label);
+        box.appendChild(b);
+      });
+    });
+  }
+
+  // ---------- OTP rounds ----------
+  const ROUNDS = {
+    1: { life: 16000, drift: 7, speed: 1, sub: 'Никому его не сообщайте. Даже себе.',
+         gen() { const d = shuffle('123456789'.split('')); return { code: d.slice(0, 4), tiles: d }; } },
+    2: { life: 15000, drift: 10, speed: 1.2, hideAfter: 3500, sub: 'Запомните код. Он не будет повторён.',
+         gen() {
+           const pairs = [['2','Z'],['5','S'],['8','B'],['1','I']];
+           const sides = pairs.map(p => Math.random() < .5 ? [p[0], p[1]] : [p[1], p[0]]);
+           const code = shuffle(sides.map(s => s[0]));
+           const tiles = [...code, ...sides.map(s => s[1]), pick(['4','7','A','E'])];
+           return { code, tiles };
+         } },
+    3: { life: 17000, drift: 14, speed: 1.45, mirror: true, sub: 'Отражено для защиты от подглядывания.',
+         gen() { const d = shuffle('RKEFLPJ74'.split('')); return { code: d.slice(0, 4), tiles: d }; } },
+  };
+
+  function otpOnce(n) {
+    const cfg = ROUNDS[n];
+    const { code, tiles } = cfg.gen();
+    const w = $('#win');
+    w.innerHTML = tbar('АОВНП · Подтверждение личности') + `<div class="wbody">
+      <div class="notif">
+        <div class="nhead"><img src="${LOGO}" alt="">Небесная почта<span>сейчас</span></div>
+        <div class="ntext">Ваш одноразовый код:<b class="code${cfg.mirror ? ' mirror' : ''}">${code.join('')}</b></div>
+        <div class="nsub">${cfg.sub}</div>
+      </div>
+      <div class="slots">${code.map(() => '<i></i>').join('')}</div>
+      <div class="timer"><span>Срок жизни кода</span><div class="bar"><i style="animation-duration:${cfg.life}ms"></i></div></div>
+      <div class="field"></div></div>`;
+    w.classList.add('show'); w.scrollTop = 0;
+    const field = w.querySelector('.field');
+    const cells = shuffle([...Array(9).keys()]);
+    tiles.forEach((ch, i) => {
+      const c = cells[i] % 3, r = Math.floor(cells[i] / 3);
+      const x = 17 + 33 * c + rand(-4, 4), y = 17 + 33 * r + rand(-4, 4);
+      const t = document.createElement('button');
+      t.className = 'tile'; t.textContent = ch; t.dataset.ch = ch;
+      t.style.left = `calc(${x}% - 31px)`; t.style.top = `calc(${y}% - 31px)`;
+      t.style.setProperty('--dx', `${rand(-1, 1) * cfg.drift}px`);
+      t.style.setProperty('--dy', `${rand(-1, 1) * cfg.drift}px`);
+      t.style.animationDuration = `${rand(2.6, 4.2) / cfg.speed}s`;
+      t.style.animationDelay = `${-rand(0, 3)}s`;
+      field.appendChild(t);
+    });
+    const slots = w.querySelectorAll('.slots i');
+    const bar = w.querySelector('.bar i');
+    if (S.day >= 4) setTimeout(() => mom(field), 60);
+    return new Promise(res => {
+      let idx = 0, locked = false, hideT = 0;
+      const end = (v, delay) => {
+        if (locked) return; locked = true;
+        clearTimeout(tm); clearTimeout(hideT); momClear();
+        bar.style.animationPlayState = 'paused';
+        setTimeout(() => res(v), delay);
+      };
+      const tm = setTimeout(() => end('timeout', 200), cfg.life);
+      if (cfg.hideAfter) hideT = setTimeout(() => {
+        if (locked) return;
+        w.querySelector('.code').textContent = '••••';
+        w.querySelector('.nsub').textContent = 'Код скрыт в целях вашей безопасности.';
+      }, cfg.hideAfter);
+      field.addEventListener('click', e => {
+        const t = e.target.closest('.tile');
+        if (!t || locked || t.classList.contains('hit')) return;
+        if (t.dataset.ch === code[idx]) {
+          t.classList.add('hit');
+          slots[idx].textContent = code[idx]; slots[idx].classList.add('on');
+          idx++;
+          if (idx === code.length) end('ok', 500);
+        } else {
+          t.classList.add('bad');
+          end('wrong', 650);
+        }
+      });
+    });
+  }
+
+  async function failStep(type, n) {
+    const m = pickMsg(type, n);
+    const isNew = record(m.id);
+    addYears(m.years);
+    const p = winStep({
+      html: `<div class="warn"><b>⚠</b><span>${m.sys}</span></div>
+             <div class="pen">Срок ипотеки продлён на ${m.years} лет</div>
+             ${isNew ? '<div class="newbadge">Новое уведомление в личном деле</div>' : ''}`,
+      buttons: [['Запросить новый код', 'primary']]
+    });
+    say(m.angel);
+    await p; hush();
+  }
+
+  async function otpRound(n) {
+    for (;;) {
+      const r = await otpOnce(n);
+      if (r === 'ok') return;
+      await failStep(r, n);
+    }
+  }
+
+  async function agreement(pages = '3 402') {
+    let note = '';
+    for (;;) {
+      const k = await winStep({
+        title: 'АОВНП · Документы',
+        html: `<p><b>Пользовательское соглашение обновлено.</b></p>
+               <p class="muted">Объём: ${pages} страницы. Изменения вступили в силу вчера. Продолжая существовать, вы соглашаетесь с условиями.</p>${note}`,
+        buttons: [['Принимаю', 'primary', 'yes'], ['Не принимаю', 'ghost', 'no']]
+      });
+      if (k === 'yes') return;
+      const m = byId.a1;
+      const isNew = record(m.id);
+      note = `<div class="note">${m.sys}${isNew ? '<br><span class="newbadge" style="margin:6px 0 0">Новое уведомление в личном деле</span>' : ''}</div>`;
+      say(m.angel);
+    }
+  }
+
+  // ---------- Wing easter egg ----------
+  $('#wing').addEventListener('click', () => {
+    if (S.wingDone || !S.busy) return;
+    S.wingDone = true;
+    const m = byId.x1;
+    record(m.id); addYears(m.years); toast(m);
+  });
+
+  // ---------- Archive ----------
+  function openArchive() {
+    const sh = $('#archive .sheet');
+    sh.innerHTML = `<h3>Личное дело</h3>
+      <div class="who2">Ангел, младший специалист по внешнему блаженству · уведомлений: ${seen.size} из ${MSG.length}</div>
+      ${Object.keys(DAYS).map(d => `<div class="arch-day">${DAYS[d].name}</div>` + MSG.filter(m => m.day == d).map(m => seen.has(m.id)
+        ? `<div class="entry"><div class="es">${m.sys}</div><div class="ea">Ангел: ${m.angel}</div>${m.years ? `<div class="ey">+${m.years} лет к ипотеке</div>` : ''}</div>`
+        : `<div class="entry locked">Уведомление ещё не получено</div>`).join('')).join('')}
+      <button class="btn primary" id="closeArchive">Закрыть</button>`;
+    $('#archive').classList.add('show');
+    $('#closeArchive').onclick = () => $('#archive').classList.remove('show');
+  }
+  $('#archive').addEventListener('click', e => { if (e.target.id === 'archive') $('#archive').classList.remove('show'); });
+  ['#titleArchive', '#deskArchive'].forEach(s => $(s).addEventListener('click', openArchive));
+
+  // ---------- Day flow ----------
+  function tapScreen(id) {
+    return new Promise(res => {
+      const el = $('#' + id);
+      const h = () => { el.removeEventListener('click', h); res(); };
+      setTimeout(() => el.addEventListener('click', h), 400);
+    });
+  }
+  const mkBtn = (label, kind, fn) => { const b = document.createElement('button'); b.className = 'btn ' + (kind || ''); b.textContent = label; b.onclick = fn; return b; };
+  const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+
+  function resetStage() {
+    $('#endcard').classList.remove('show'); $('#evening').classList.remove('ended');
+    $('#win').classList.remove('show'); $('#postcard').classList.remove('show'); $('#lida').classList.remove('show');
+    momClear(); hush();
+    $('#final').classList.remove('ended'); $('#weekcard').classList.remove('show'); $('#kt1').classList.remove('show'); $('#kt2').classList.remove('show');
+    $('#pan').style.transition = 'none'; $('#pan').style.backgroundPosition = '100% 50%'; void $('#pan').offsetWidth; $('#pan').style.transition = '';
+  }
+
+  async function runDay(d) {
+    S.day = d;
+    S.years = d === 1 ? 20000 : (P.end[d - 1] || 20000);
+    S.dayStart = S.years; S.wingDone = false; S.hasCup = false; S.k1 = false; S.m1 = false; S.m2 = false; S.chk = 0; S.f1 = false; S.f2 = false;
+    setYearsText(S.years);
+    resetStage();
+    $('#dayName').textContent = DAYS[d].name;
+    $('#dayTask').textContent = DAYS[d].task;
+    $('#vbottle').src = `assets/bottle_${BOTTLE[d]}.webp`;
+    await show('daycard');
+    await tapScreen('daycard');
+    await show('desk');
+    S.busy = true;
+    await ({ 1: workMonday, 2: workTuesday, 3: workWednesday, 4: workThursday, 5: workFriday })[d]();
+    S.busy = false;
+    $('#win').classList.remove('show');
+    if (d === 5) { await finale(); return; }
+    await show('evening');
+    await ({ 1: eveningMonday, 2: eveningTuesday, 3: eveningWednesday, 4: eveningThursday })[d]();
+    hush();
+    P.done = Math.max(P.done, d); P.end[d] = S.years; saveP();
+    endOfDay(d);
+  }
+
+  // ---------- Monday ----------
+  async function workMonday() {
+    await say('Сегодня хороший день. Принтер улетел только до окна.', { tap: true });
+    hush();
+    await winStep({
+      html: `<p class="muted">Добро пожаловать в АОВНП. Пожалуйста, войдите в систему.</p>
+             <div class="field2"><label>Логин</label><div class="input">angel.angel</div></div>
+             <div class="field2"><label>Должность</label><div class="input">младший специалист по внешнему блаженству</div></div>`,
+      buttons: [['Войти', 'primary']]
+    });
+    await winStep({
+      html: `<div class="notice">Вход по паролю отключён по соображениям высшей безопасности.</div>
+             <p>Для вашего удобства будет использован одноразовый код.</p>`,
+      buttons: [['Получить код', 'primary']]
+    });
+    await say('Хорошо. Я всё равно не помнил пароль.', { tap: true });
+    hush();
+    await winStep({
+      html: `<p>Код придёт в уведомлении.</p><p>Нажимайте символы кода по порядку, пока код жив.</p>`,
+      buttons: [['Понятно', 'primary']]
+    });
+    await otpRound(1);
+
+    await winStep({
+      html: `<div class="okmsg">Код принят.</div><p>Для завершения входа требуется повторное подтверждение.</p>`,
+      buttons: []
+    });
+    await say('Конечно требуется.', { tap: true });
+    hush();
+    await winStep({
+      html: `<div class="okmsg">Код принят.</div><p>Для завершения входа требуется повторное подтверждение.</p>`,
+      buttons: [['Получить новый код', 'primary']]
+    });
+    await otpRound(2);
+
+    await winStep({
+      html: `<div class="okmsg">Код принят.</div>
+             <p>Пожалуйста, подтвердите, что это действительно вы, а не искажённая версия вас.</p>
+             <p class="muted">Код будет показан в зеркальном отражении для защиты от подглядывания.</p>`,
+      buttons: [['Получить код', 'primary']]
+    });
+    await otpRound(3);
+
+    await agreement();
+    hush();
+
+    await winStep({
+      html: `<div class="okmsg big">Вход выполнен.</div><p>Добро пожаловать в новый вечный рабочий день.</p>`,
+      buttons: []
+    });
+    await say('Вошёл. Теперь можно работать.', { tap: true });
+    await say('То есть можно начинать проходить проверки для работы.', { tap: true });
+    hush();
+    await winStep({
+      html: `<div class="okmsg big">Вход выполнен.</div><p>Добро пожаловать в новый вечный рабочий день.</p>
+             <p class="muted">Ваша сессия будет завершена по соображениям высшей безопасности через 0 минут.</p>`,
+      buttons: [['Закончить рабочий день', 'primary']]
+    });
+  }
+
+  async function eveningMonday() {
+    await say('Вечер. Привезли новую бутыль.', { tap: true, who: null });
+    await say('Ты новенькая. Тут хорошо. Тут всегда хорошо.', { tap: true });
+    await say('Бутыль с любопытством разглядывает офис. Владимир молчит: он всё это уже видел.', { tap: true, who: null });
+    const k = await choose([['stay', 'Постоять рядом'], ['thanks', 'Сказать Владимиру спасибо']]);
+    if (k === 'stay') {
+      await say('Вы просто стоите рядом. Никто ничего не проверяет. Странное чувство.', { tap: true, who: null });
+    } else {
+      await say('Спасибо, Владимир.', { tap: true });
+      await say('Владимир не отвечает. Но, кажется, устал чуть меньше обычного.', { tap: true, who: null });
+    }
+  }
+
+  // ---------- Tuesday: appearance check ----------
+  const ITEMS = { halo: 'Нимб', wings: 'Крылья', badge: 'Бейдж', stamp: 'Печать допуска', cup: 'Стаканчик кофе', pass: 'Пропуск' };
+  const ORDER = ['halo', 'wings', 'badge', 'stamp', 'cup', 'pass'];
+  const LOOK = {
+    1: { no: '14-А', req: ['halo', 'badge'], forb: [] },
+    2: { no: '14-Б', req: ['halo', 'badge', 'stamp', 'cup'], forb: [], look: true },
+    4: { no: '15-П', req: ['halo', 'wings', 'cup'], forb: ['pass'] },
+    3: { no: '14-В', req: ['halo', 'wings', 'badge', 'cup'], forb: [], warm: 5200,
+         update: { at: 2600, no: '14-Г', req: ['halo', 'wings', 'pass', 'stamp', 'cup'], forb: ['badge'] } },
+  };
+  const icon = k => `assets/i_${k}.webp`;
+  const regHtml = (r, updated) => `<div class="reg${updated ? ' flash' : ''}">${updated ? '<span class="updated">Обновлён 11:42</span>' : ''}
+      <div class="rh">Регламент облика № ${r.no}</div><div class="rd">Предъявить:</div>
+      <div class="icons">${r.req.map(k => `<div class="ri"><div class="ib"><img src="${icon(k)}" alt=""></div>${ITEMS[k]}</div>`).join('')}${r.forb.map(k => `<div class="ri no"><div class="ib"><img src="${icon(k)}" alt=""></div>${ITEMS[k]}: нельзя</div>`).join('')}</div></div>`;
+
+  function lookOnce(n) {
+    const cfg = LOOK[n];
+    let reg = { no: cfg.no, req: cfg.req, forb: cfg.forb }, updated = false, warming = !!cfg.warm, scanning = false;
+    const sel = new Set(), timers = [];
+    const w = $('#win');
+    return new Promise(res => {
+      const render = flash => {
+        w.innerHTML = tbar('АОВНП · Проверка облика') + `<div class="wbody">${regHtml(reg, flash)}
+          <p class="hint">Выберите элементы облика для предъявления.</p>
+          <div class="inv">${ORDER.map(k => {
+            const na = k === 'cup' && !S.hasCup, got = k === 'cup' && S.hasCup;
+            return `<button class="it${sel.has(k) ? ' sel' : ''}${na ? ' na' : ''}${got ? ' got' : ''}" data-k="${k}"><img src="${icon(k)}" alt="">${ITEMS[k]}${na ? '<small>Выдаётся после проверки облика</small>' : ''}${got ? '<small>пустой, чужой</small>' : ''}</button>`;
+          }).join('')}</div><div class="btns"></div></div>`;
+        w.classList.add('show');
+        const box = w.querySelector('.btns');
+        const scan = mkBtn(warming ? 'Сканер прогревается…' : 'Пройти сканирование', 'primary', () => doScan());
+        scan.id = 'scanBtn'; scan.disabled = warming; if (warming) scan.style.opacity = .55;
+        box.appendChild(scan);
+        if (cfg.look && !S.hasCup) box.appendChild(mkBtn('Осмотреться', '', () => lookAround()));
+        w.querySelectorAll('.it').forEach(b => b.onclick = () => {
+          const k = b.dataset.k;
+          if (k === 'cup' && !S.hasCup) { b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope'); return; }
+          sel.has(k) ? sel.delete(k) : sel.add(k);
+          b.classList.toggle('sel', sel.has(k));
+        });
+      };
+      const lookAround = () => {
+        w.innerHTML = tbar('АОВНП · Проверка облика') + `<div class="wbody">
+          <p>На соседнем столе стоит пустой стаканчик корпоративного кофе. Чей-то. Вчерашний.</p>
+          <p class="muted">С облаком на боку. Совершенно корпоративный.</p><div class="btns"></div></div>`;
+        w.querySelector('.btns').append(
+          mkBtn('Взять стаканчик', 'primary', () => { S.hasCup = true; sel.add('cup'); render(false); say('Я верну. Наверное.'); }),
+          mkBtn('Вернуться', '', () => render(false)));
+      };
+      const doScan = async () => {
+        if (scanning) return; scanning = true;
+        timers.forEach(clearTimeout);
+        const items = [...sel];
+        w.innerHTML = tbar('АОВНП · Проверка облика') + `<div class="wbody"><div class="scanning"><div class="row">${items.map(k => `<img src="${icon(k)}" alt="">`).join('') || 'Предъявлено: ничего'}</div></div>
+          <p class="hint" style="text-align:center">Сканирование облика…</p></div>`;
+        await sleep(1500);
+        const missing = reg.req.filter(k => !sel.has(k));
+        const extra = items.filter(k => !reg.req.includes(k));
+        if (!missing.length && !extra.length) return res('ok');
+        let id;
+        if (n === 2 && missing.includes('cup')) id = 'o4';
+        else if (n === 3 && updated && sameSet(items, cfg.req)) id = 'o6';
+        else if (n === 3 && updated && sel.has('badge')) id = 'o5';
+        else if (missing.length && !extra.length) id = 'o3';
+        else if (extra.length && !missing.length) id = 'o2';
+        else id = 'o1';
+        res(id);
+      };
+      render(false);
+      if (cfg.update) timers.push(setTimeout(() => { reg = cfg.update; updated = true; if (!scanning && $('#scanBtn')) render(true); }, cfg.update.at));
+      if (cfg.warm) timers.push(setTimeout(() => {
+        warming = false; const b = $('#scanBtn');
+        if (b) { b.disabled = false; b.style.opacity = ''; b.textContent = 'Пройти сканирование'; }
+      }, cfg.warm));
+    });
+  }
+
+  async function lookRound(n) {
+    for (;;) {
+      const r = await lookOnce(n);
+      if (r === 'ok') { hush(); return; }
+      const m = byId[r]; const isNew = record(r); addYears(m.years);
+      const p = winStep({ title: 'АОВНП · Проверка облика',
+        html: `<div class="warn"><b>⚠</b><span>${m.sys}</span></div><div class="pen">Срок ипотеки продлён на ${m.years} лет</div>${isNew ? '<div class="newbadge">Новое уведомление в личном деле</div>' : ''}`,
+        buttons: [['Повторить проверку', 'primary']] });
+      say(m.angel); await p; hush();
+    }
+  }
+
+  async function coffeeDispense() {
+    const w = $('#win');
+    w.innerHTML = tbar('АОВНП · Кофемашина') + `<div class="wbody"><img class="cm" id="cm" src="assets/coffee.webp" alt="Кофемашина">
+      <div class="notice" id="decal">Необходима декальцинация. Ориентировочное время: 40 минут.</div><div class="progress"><i></i></div></div>`;
+    w.classList.add('show'); w.scrollTop = 0;
+    $('#cm').onclick = () => {
+      const c = $('#cm'); c.classList.remove('wob'); void c.offsetWidth; c.classList.add('wob');
+      if (!S.k1) { S.k1 = true; record('k1'); toast(byId.k1); }
+    };
+    await say('Я подожду. Я умею.', { tap: true });
+    hush();
+    requestAnimationFrame(() => { const i = w.querySelector('.progress i'); if (i) i.style.width = '100%'; });
+    await sleep(2900);
+    const dn = $('#decal'); if (dn) dn.outerHTML = '<div class="okmsg">Декальцинация завершена. Прошло 40 минут.</div>';
+    await sleep(600);
+  }
+
+  async function workTuesday() {
+    await say('Вчера я вошёл в систему. Сегодня это не считается.', { tap: true });
+    hush();
+    await winStep({ html: `<div class="notice">Ваша сессия завершена по соображениям высшей безопасности.</div><p>Для продолжения подтвердите личность.</p>`,
+      buttons: [['Получить код', 'primary']] });
+    await otpRound(1);
+    await winStep({ html: `<div class="okmsg">Личность подтверждена.</div><p class="muted">До следующего подтверждения.</p>`, buttons: [] });
+    await say('Теперь кофе. Просто кофе.', { tap: true });
+    hush();
+    await winStep({ title: 'АОВНП · Кофемашина',
+      html: `<img class="cm" src="assets/coffee.webp" alt="Кофемашина"><p>Для получения напитка пройдите проверку облика.</p>
+             <p class="muted">Требования указаны в действующем регламенте. Регламент может быть обновлён без предупреждения в целях вашего удобства.</p>`,
+      buttons: [['Пройти проверку', 'primary']] });
+    await lookRound(1);
+    await winStep({ html: `<div class="okmsg">Облик предварительно подтверждён.</div><p>Для выдачи напитка требуется расширенная проверка.</p>`,
+      buttons: [['Продолжить', 'primary']] });
+    await lookRound(2);
+    await winStep({ html: `<div class="okmsg">Облик соответствует регламенту.</div><p class="muted">Содержимое стаканчика не проверяется.</p>`, buttons: [] });
+    await say('Он пустой. Никто не спросил.', { tap: true });
+    hush();
+    await winStep({ html: `<div class="notice">В 11:42 регламент облика будет обновлён.</div><p>Пожалуйста, пройдите финальную проверку.</p>`,
+      buttons: [['Пройти финальную проверку', 'primary']] });
+    await lookRound(3);
+    await coffeeDispense();
+    await winStep({ title: 'АОВНП · Кофемашина', html: `<div class="okmsg big">Кофе выдан.</div><p class="muted">Температура: приемлемая.</p>`, buttons: [] });
+    await say('Приемлемой температуры. Как всё здесь.', { tap: true });
+    hush();
+    await winStep({ title: 'АОВНП · Кофемашина', html: `<div class="okmsg big">Кофе выдан.</div><p class="muted">Температура: приемлемая.</p>`,
+      buttons: [['Закончить рабочий день', 'primary']] });
+  }
+
+  async function eveningTuesday() {
+    await say('Вечер вторника. Бутыль уже освоилась. Воды в ней стало меньше.', { tap: true, who: null });
+    await say('В ящике стола нашлась открытка.', { tap: true, who: null });
+    $('#postcard').classList.add('show');
+    await say('Мама снова прислала открытку. Значит, помнит.', { tap: true });
+    await say('Это хуже.', { tap: true });
+    const k = await choose([['show', 'Показать открытку Владимиру'], ['hide', 'Убрать открытку в ящик']]);
+    if (k === 'show') {
+      await say('Владимир смотрит на открытку. Бутыль очень долго смотрит на нарисованный суп.', { tap: true, who: null });
+      await say('Она нарисовала суп. Чтобы я точно понял.', { tap: true });
+    } else {
+      $('#postcard').classList.remove('show');
+      await say('Я потом отвечу. Когда поем. Я не голоден.', { tap: true });
+    }
+    $('#postcard').classList.remove('show');
+  }
+
+  // ---------- Wednesday: captcha of absurdity ----------
+  const WINGS = ['printer', 'coffee', 'phone', 'laptop', 'vladimir', 'wings', 'logo', 'angel'];
+  const CAP = {
+    1: { head: 'Выберите все <b>облака</b>, соответствующие <b>ценностям компании</b>', img: LOGO,
+         tiles: [...Array(9).keys()].map(i => ({ id: 'c' + i, src: `assets/cl_${i}.webp` })), correct: ['c1', 'c3', 'c8'] },
+    2: { head: 'Отметьте всех <b>сотрудников</b>, искренне испытывающих <b>блаженство</b>',
+         tiles: [...Array(9).keys()].map(i => ({ id: 'b' + i, src: `assets/bl_${i}.webp` })), correct: [] },
+    3: { head: 'Выберите все изображения <b>с крыльями</b>',
+         tiles: [...WINGS.map(k => ({ id: k, src: `assets/wg_${k}.webp` })), { id: 'cloud', src: 'assets/cl_3.webp' }], correct: null },
+  };
+
+  function capOnce(n) {
+    const cfg = CAP[n];
+    const tiles = shuffle(cfg.tiles);
+    const correct = cfg.correct || tiles.map(t => t.id);
+    const sel = new Set();
+    const w = $('#win');
+    w.innerHTML = tbar('АОВНП · Проверка на небесность') + `<div class="wbody" style="padding:10px">
+      <div class="cap"><div class="cap-head">${cfg.img ? `<img src="${cfg.img}" alt="">` : ''}<div>${cfg.head}</div></div>
+      <div class="cap-grid">${tiles.map(t => `<button class="ct" data-id="${t.id}"><img src="${t.src}" alt=""></button>`).join('')}</div>
+      <div class="cap-foot"><span>Если ничего подходящего нет, нажмите «Подтвердить»</span><button class="btn primary" id="capOk">Подтвердить</button></div></div></div>`;
+    w.classList.add('show'); w.scrollTop = 0;
+    w.querySelectorAll('.ct').forEach(b => b.onclick = () => {
+      const id = b.dataset.id; sel.has(id) ? sel.delete(id) : sel.add(id); b.classList.toggle('sel', sel.has(id));
+    });
+    return new Promise(res => {
+      $('#capOk').onclick = async () => {
+        $('#capOk').disabled = true;
+        await sleep(450);
+        const items = [...sel];
+        const wrong = items.filter(id => !correct.includes(id));
+        const missed = correct.filter(id => !sel.has(id));
+        if (!wrong.length && !missed.length) return res('ok');
+        if (n === 1) return res(wrong.length ? 'c1' : 'c2');
+        if (n === 2) return res(sel.size === 9 ? 'b2' : 'b1');
+        return res(!sel.has('printer') ? 'g2' : 'g1');
+      };
+    });
+  }
+
+  async function capRound(n) {
+    for (;;) {
+      const r = await capOnce(n);
+      if (r === 'ok') { hush(); return; }
+      const m = byId[r]; const isNew = record(r); addYears(m.years);
+      const p = winStep({ title: 'АОВНП · Проверка на небесность',
+        html: `<div class="warn"><b>⚠</b><span>${m.sys}</span></div><div class="pen">Срок ипотеки продлён на ${m.years} лет</div>${isNew ? '<div class="newbadge">Новое уведомление в личном деле</div>' : ''}`,
+        buttons: [['Попробовать снова', 'primary']] });
+      say(m.angel); await p; hush();
+    }
+  }
+
+  async function reasonStep() {
+    let note = '';
+    for (;;) {
+      const k = await winStep({ title: 'АОВНП · Кадровые вопросы',
+        html: `<p><b>Основание для отпуска</b></p><p class="muted">Выберите одно из предусмотренных оснований.</p>${note}<div class="reason"></div>`,
+        buttons: [['Усталость', '', 'tired'], ['Семейные обстоятельства', '', 'family'], ['Плановое блаженство', '', 'bliss']] });
+      if (k === 'bliss') return;
+      const m = byId[k === 'tired' ? 'v1' : 'v2'];
+      const isNew = record(m.id);
+      note = `<div class="note" style="margin:0 0 6px">${m.sys}${isNew ? '<br><span class="newbadge" style="margin:6px 0 0">Новое уведомление в личном деле</span>' : ''}</div>`;
+      say(m.angel);
+    }
+  }
+
+  function notDemon() {
+    const w = $('#win');
+    w.innerHTML = tbar('АОВНП · Кадровые вопросы') + `<div class="wbody">
+      <p>Для подачи заявления подтвердите, что вы не демон.</p>
+      <button class="demon" id="demonBtn"><i></i>Я не демон<small>АОВНП<br>Защита от падших</small></button></div>`;
+    w.classList.add('show');
+    return new Promise(res => { $('#demonBtn').onclick = () => res(); });
+  }
+
+  async function workWednesday() {
+    await say('Сегодня хороший день. Я подам на отпуск.', { tap: true });
+    hush();
+    await winStep({ html: `<div class="okmsg">Сессия активна.</div><p class="muted">Повторное подтверждение личности не требуется. Пока.</p>`, buttons: [] });
+    await say('Сессия ещё жива. Подозрительно.', { tap: true });
+    hush();
+    await winStep({ title: 'АОВНП · Кадровые вопросы',
+      html: `<p><b>Заявление на ежегодный отпуск</b></p>
+             <div class="field2"><label>Сотрудник</label><div class="input">Ангел, младший специалист по внешнему блаженству</div></div>
+             <div class="field2"><label>Желаемые даты</label><div class="input">1–14 июля</div></div>`,
+      buttons: [['Далее', 'primary']] });
+    await reasonStep();
+    hush();
+    await notDemon();
+    await capRound(1);
+    await winStep({ title: 'АОВНП · Проверка на небесность', html: `<div class="okmsg">Проверка пройдена.</div><p>Требуется дополнительная проверка.</p>`, buttons: [] });
+    await say('Я не демон. Я специалист по внешнему блаженству.', { tap: true });
+    hush();
+    await capRound(2);
+    await winStep({ title: 'АОВНП · Проверка на небесность', html: `<div class="okmsg">Проверка пройдена.</div><p>Требуется последняя дополнительная проверка.</p>`, buttons: [] });
+    await say('Никто. Я так и думал.', { tap: true });
+    hush();
+    await capRound(3);
+    await winStep({ title: 'АОВНП · Кадровые вопросы',
+      html: `<div class="okmsg big">Заявление принято.</div><p>Отпуск согласован на <b>1–14 июля 2340 года</b>.</p>
+             <p class="muted">Просим не планировать ничего заранее: даты могут быть перенесены в целях вашего удобства.</p>`, buttons: [] });
+    await say('2340 год. По сравнению с ипотекой это почти завтра.', { tap: true });
+    hush();
+    await winStep({ title: 'АОВНП · Кадровые вопросы',
+      html: `<div class="okmsg big">Заявление принято.</div><p>Отпуск согласован на <b>1–14 июля 2340 года</b>.</p>
+             <p class="muted">Просим не планировать ничего заранее: даты могут быть перенесены в целях вашего удобства.</p>`,
+      buttons: [['Закончить рабочий день', 'primary']] });
+  }
+
+  async function eveningWednesday() {
+    await say('Вечер среды. В бутыли осталась половина. Бутыль больше не разглядывает офис. Она смотрит на Владимира.', { tap: true, who: null });
+    await say('Мне согласовали отпуск. На 2340 год.', { tap: true });
+    await say('Владимир молчит.', { tap: true, who: null });
+    await say('Я знаю. Ты в отпуске не был никогда.', { tap: true });
+    const k = await choose([['tell', 'Рассказать, куда поедешь'], ['quiet', 'Просто помолчать вместе']]);
+    if (k === 'tell') {
+      await say('Поеду на нижние облака. Говорят, там разрешают немного летать. Если оформить заявку.', { tap: true });
+      await say('Бутыль слушает очень внимательно. Как будто тоже собирается.', { tap: true, who: null });
+    } else {
+      await say('Вы молчите вдвоём. Втроём. Лучшее совещание за неделю.', { tap: true, who: null });
+    }
+  }
+
+  // ---------- Mom ----------
+  const MOM_LINES = ['Бонечка, ты покушал?', 'Бонечка, ты покушал???', 'Бонечка, я вижу, что ты прочитал.'];
+  let momRes = null, momP = null, momTimers = [];
+  function mom(cover, noEsc) {
+    if (momRes) return momP;
+    const el = $('#mom'); let lvl = 0;
+    if (cover) { const a = $('#app').getBoundingClientRect(), r = cover.getBoundingClientRect(); el.style.top = Math.max(60, r.top - a.top + 14) + 'px'; } else el.style.top = '';
+    const set = () => {
+      el.querySelector('.mt').textContent = MOM_LINES[lvl];
+      el.classList.remove('esc'); void el.offsetWidth; if (lvl) el.classList.add('esc');
+    };
+    el.style.transform = ''; el.style.opacity = '';
+    set(); el.classList.add('show');
+    const esc = () => {
+      if (!momRes || lvl >= 2) return;
+      lvl++; set();
+      if (lvl === 2 && !S.m1) { S.m1 = true; record('m1'); say(byId.m1.angel); }
+      momTimers.push(setTimeout(esc, 2200));
+    };
+    if (!noEsc) momTimers.push(setTimeout(esc, 2200));
+    momP = new Promise(r => { momRes = r; });
+    return momP;
+  }
+  function momDismiss(dir) {
+    momTimers.forEach(clearTimeout); momTimers = [];
+    const el = $('#mom');
+    el.classList.remove('dragging');
+    el.style.transform = `translateX(${dir * 115}%)`; el.style.opacity = '0';
+    el.classList.remove('show');
+    const r = momRes; momRes = null; if (r) r();
+  }
+  function momClear() { if (momRes) momDismiss(1); }
+  (() => {
+    const el = $('#mom'); let x0 = null, dx = 0;
+    el.querySelector('.mx').addEventListener('click', e => { e.stopPropagation(); momDismiss(1); });
+    el.addEventListener('pointerdown', e => { if (e.target.closest('.mx')) return; x0 = e.clientX; dx = 0; el.classList.add('dragging'); try { el.setPointerCapture(e.pointerId); } catch (_) {} });
+    el.addEventListener('pointermove', e => { if (x0 == null) return; dx = e.clientX - x0; el.style.transform = `translateX(${dx}px)`; el.style.opacity = String(Math.max(.2, 1 - Math.abs(dx) / 260)); });
+    const up = () => {
+      if (x0 == null) return; x0 = null;
+      if (Math.abs(dx) > 60) momDismiss(Math.sign(dx));
+      else { el.classList.remove('dragging'); el.style.transform = ''; el.style.opacity = ''; }
+    };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  })();
+
+  // ---------- Thursday: session timer ----------
+  const SCHED = (() => {
+    const mon = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+    const row = i => { const k = i - 1; return `<div><span>№ ${fmt(i)}</span><span>год ${fmt(Math.floor(k / 12) + 1)}, ${mon[k % 12]}</span><span>1 240</span></div>`; };
+    const r = [];
+    for (let i = 1; i <= 48; i++) r.push(row(i));
+    r.push('<div class="gap">… ещё 239 904 взноса …</div>');
+    for (let i = 239953; i <= 240000; i++) r.push(row(i));
+    r.push('<div class="tot"><span>Итого</span><span>297 600 000 благодатей</span></div>');
+    return r.join('');
+  })();
+
+  function sessionMsg(inSchedule) {
+    const ids = ['s1', 's2', 's3'];
+    if (inSchedule && !seen.has('s3')) return 's3';
+    const fresh = ['s1', 's2'].filter(i => !seen.has(i));
+    return fresh.length ? fresh[0] : pick(inSchedule ? ids : ['s1', 's2']);
+  }
+
+  function payOnce() {
+    const LIFE = 32;
+    const w = $('#win');
+    w.innerHTML = tbar('АОВНП · Ипотека') + `<div class="wbody">
+      <div class="sess"><span>Сессия истекает через</span><b id="sessT">0:${LIFE}</b></div>
+      <div class="bar sbar"><i style="animation-duration:${LIFE}s"></i></div><div id="pay"></div></div>`;
+    w.classList.add('show'); w.scrollTop = 0;
+    const pay = $('#pay');
+    return new Promise(res => {
+      let left = LIFE, step = 'a', done = false;
+      const finish = v => {
+        if (done) return; done = true; clearInterval(iv); momClear();
+        const b = w.querySelector('.sbar i'); if (b) b.style.animationPlayState = 'paused';
+        setTimeout(() => res(v), v === 'ok' ? 0 : 350);
+      };
+      const iv = setInterval(() => {
+        if (step === 'e') return;
+        left--;
+        const t = $('#sessT'); if (t) t.textContent = `0:${String(Math.max(left, 0)).padStart(2, '0')}`;
+        if (left <= 0) finish(sessionMsg(step === 'c'));
+      }, 1000);
+      const A = () => {
+        step = 'a';
+        pay.innerHTML = `<p><b>Ежемесячный ипотечный взнос</b></p>
+          <div class="field2"><label>Сумма</label><div class="input">1 240 благодатей</div></div>
+          <div class="field2"><label>Назначение</label><div class="input">Жилище на облаке № 4471, срок 20 000 лет</div></div><div class="btns"></div>`;
+        pay.querySelector('.btns').append(mkBtn('Подтвердить сумму', 'primary', B));
+        setTimeout(() => { if (!done && step === 'a') mom(pay.querySelector('.btns')); }, 1400);
+      };
+      const B = () => {
+        step = 'b'; let on = false;
+        pay.innerHTML = `<p>Подтвердите, что платёж совершается добровольно.</p><button class="demon" id="vol"><i></i>Добровольно</button><div class="btns"></div>`;
+        const nx = mkBtn('Далее', 'primary off', () => { if (on) C(); });
+        pay.querySelector('.btns').append(nx);
+        $('#vol').onclick = () => { on = !on; $('#vol').classList.toggle('on', on); nx.classList.toggle('off', !on); };
+      };
+      const C = () => {
+        step = 'c';
+        pay.innerHTML = `<p>Ознакомьтесь с графиком платежей.</p><div class="sched" id="sched">${SCHED}</div><div id="schedNote"></div><div class="btns"></div>`;
+        const ok = mkBtn('Ознакомлен', 'primary off', () => {
+          if (ok.classList.contains('off')) {
+            if (!S.m2) {
+              S.m2 = true; const m = byId.m2; const isNew = record('m2');
+              $('#schedNote').innerHTML = `<div class="note">${m.sys}${isNew ? '<br><span class="newbadge" style="margin:6px 0 0">Новое уведомление в личном деле</span>' : ''}</div>`;
+              say(m.angel);
+            }
+            return;
+          }
+          D();
+        });
+        pay.querySelector('.btns').append(ok);
+        const sc = $('#sched');
+        sc.addEventListener('scroll', () => { if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 8) ok.classList.remove('off'); });
+        setTimeout(() => { if (!done && step === 'c') mom($('#sched')); }, 1800);
+      };
+      const D = () => {
+        step = 'd';
+        pay.innerHTML = `<p>Всё готово к оплате.</p><div class="btns"></div>`;
+        pay.querySelector('.btns').append(mkBtn('Оплатить', 'primary', async () => {
+          step = 'e';
+          pay.innerHTML = '<div class="scanning" style="height:70px">Платёж обрабатывается…</div>';
+          await sleep(1300); finish('ok');
+        }));
+      };
+      A();
+    });
+  }
+
+  async function payRound() {
+    for (;;) {
+      const r = await payOnce();
+      if (r === 'ok') { hush(); return; }
+      const m = byId[r]; const isNew = record(r); addYears(m.years);
+      const p = winStep({ title: 'АОВНП · Ипотека',
+        html: `<div class="warn"><b>⚠</b><span>${m.sys}</span></div><div class="pen">Срок ипотеки продлён на ${m.years} лет</div>${isNew ? '<div class="newbadge">Новое уведомление в личном деле</div>' : ''}`,
+        buttons: [['Войти снова', 'primary']] });
+      say(m.angel); await p; hush();
+      await otpRound(1);
+      await winStep({ title: 'АОВНП · Ипотека', html: `<div class="okmsg">Личность подтверждена.</div><p>Начните оплату заново.</p>`, buttons: [['Начать оплату', 'primary']] });
+    }
+  }
+
+  async function workThursday() {
+    await say('Сегодня хороший день. Сегодня платёж.', { tap: true });
+    hush();
+    await winStep({ html: `<div class="notice">Ваша сессия завершена по соображениям высшей безопасности.</div><p>Для продолжения подтвердите личность.</p>`,
+      buttons: [['Получить код', 'primary']] });
+    await otpRound(1);
+    await winStep({ html: `<div class="okmsg">Личность подтверждена.</div>`, buttons: [] });
+    await say('Мама. Конечно. Именно сейчас.', { tap: true });
+    hush();
+    await winStep({ title: 'АОВНП · Ипотека',
+      html: `<p><b>Оплата ипотечного взноса</b></p><p class="muted">В целях вашей безопасности сессия оплаты ограничена по времени. Пожалуйста, не отвлекайтесь.</p>`,
+      buttons: [['Начать оплату', 'primary']] });
+    await payRound();
+    const paid = `<div class="okmsg big">Взнос принят.</div><p>Срок ипотеки сокращён на 1 месяц.</p>`;
+    await winStep({ title: 'АОВНП · Ипотека', html: paid, buttons: [] });
+    await sleep(1500);
+    const paid2 = paid + `<div class="notice">Срок ипотеки продлён на 1 месяц в связи с обработкой взноса.</div>`;
+    await winStep({ title: 'АОВНП · Ипотека', html: paid2, buttons: [] });
+    await say('Ноль. Зато стабильно.', { tap: true });
+    hush();
+    await winStep({ title: 'АОВНП · Ипотека', html: paid2, buttons: [['Закончить рабочий день', 'primary']] });
+  }
+
+  async function eveningThursday() {
+    await say('Вечер четверга. Воды в бутыли осталось совсем немного.', { tap: true, who: null });
+    await say('Я заплатил. Ничего не изменилось. Это, наверное, хорошо.', { tap: true });
+    await say('На боку бутыли кто-то вывел пальцем имя.', { tap: true, who: null });
+    $('#lida').classList.add('show');
+    await say('Лида.', { tap: true });
+    await say('Капли уже стекают по буквам. Кажется, сначала там было написано длиннее. И ласковее.', { tap: true, who: null });
+    await say('Владимир смотрит в сторону. Как будто это не он.', { tap: true, who: null });
+    await say('Красивое имя, Владимир.', { tap: true });
+    $('#lida').classList.remove('show');
+    const k = await choose([['hi', 'Сказать «Привет, Лида»'], ['keep', 'Ничего не говорить. Просто запомнить']]);
+    if (k === 'hi') {
+      await say('Привет, Лида.', { tap: true });
+      await say('Лида улыбается. Воды в ней осталось на один день.', { tap: true, who: null });
+    } else {
+      await say('Вы запоминаете. Это единственное, что в АОВНП можно сделать без подтверждения.', { tap: true, who: null });
+    }
+  }
+
+  // ---------- Friday: order water ----------
+  function orderOnce() {
+    const LIFE = 40;
+    setChk(8);
+    const w = $('#win');
+    w.innerHTML = tbar('АОВНП · Заказ воды') + `<div class="wbody">
+      <div class="sess"><span>Сессия истекает через</span><b id="sessT">0:${LIFE}</b></div>
+      <div class="bar sbar"><i style="animation-duration:${LIFE}s"></i></div><div id="pay"></div></div>`;
+    w.classList.add('show'); w.scrollTop = 0;
+    const pay = $('#pay');
+    return new Promise(res => {
+      let left = LIFE, step = 'a', done = false;
+      const finish = v => {
+        if (done) return; done = true; clearInterval(iv); momClear();
+        const b = w.querySelector('.sbar i'); if (b) b.style.animationPlayState = 'paused';
+        setTimeout(() => res(v), v === 'ok' ? 0 : 350);
+      };
+      const iv = setInterval(() => {
+        if (step === 'e') return;
+        left--;
+        const t = $('#sessT'); if (t) t.textContent = `0:${String(Math.max(left, 0)).padStart(2, '0')}`;
+        if (left <= 0) finish(sessionMsg(false));
+      }, 1000);
+      const note = m => { const isNew = record(m.id); $('#ordNote').innerHTML = `<div class="note">${m.sys}${isNew ? '<br><span class="newbadge" style="margin:6px 0 0">Новое уведомление в личном деле</span>' : ''}</div>`; say(m.angel); };
+      const A = () => {
+        step = 'a'; setChk(8);
+        pay.innerHTML = `<p><b>Заказ питьевой воды</b></p><p class="muted">Выберите объём поставки.</p><div id="ordNote"></div><div class="btns"></div>`;
+        pay.querySelector('.btns').append(
+          mkBtn('1 бутыль, 19 литров', 'primary', B),
+          mkBtn('2 бутыли, 38 литров', '', () => { if (!S.f1) { S.f1 = true; note(byId.f1); } }));
+        setTimeout(() => { if (!done && step === 'a') mom(pay.querySelector('.btns')); }, 1200);
+      };
+      const B = () => {
+        step = 'b'; setChk(9);
+        pay.innerHTML = `<div class="field2"><label>Получатель</label><div class="input">Владимир, отдел гидратации</div></div>
+          <div class="field2"><label>Основание</label><div class="input">Бутыль почти пуста</div></div><div class="btns"></div>`;
+        pay.querySelector('.btns').append(mkBtn('Подтвердить получателя', 'primary', C));
+      };
+      const C = () => {
+        step = 'c'; setChk(10); let on = false;
+        pay.innerHTML = `<p>Подтвердите, что вода действительно нужна.</p><button class="demon" id="vol"><i></i>Вода нужна</button><div class="btns"></div>`;
+        const nx = mkBtn('Далее', 'primary off', () => { if (on) D(); });
+        pay.querySelector('.btns').append(nx);
+        $('#vol').onclick = () => { on = !on; $('#vol').classList.toggle('on', on); nx.classList.toggle('off', !on); };
+      };
+      const D = () => {
+        step = 'd'; setChk(11);
+        pay.innerHTML = `<p>Подтвердите, что вы не бутыль.</p><div id="ordNote"></div><div class="btns"></div>`;
+        pay.querySelector('.btns').append(
+          mkBtn('Я не бутыль', 'primary', E),
+          mkBtn('Я… не уверен', '', () => { if (!S.f2) { S.f2 = true; note(byId.f2); } }));
+        setTimeout(() => { if (!done && step === 'd') mom(pay.querySelector('.btns')); }, 900);
+      };
+      const E = () => {
+        step = 'e2'; setChk(12);
+        pay.innerHTML = `<p>Всё готово.</p><div class="btns"></div>`;
+        pay.querySelector('.btns').append(mkBtn('Отправить заявку', 'primary', async () => {
+          step = 'e';
+          pay.innerHTML = '<div class="scanning" style="height:70px">Заявка отправляется…</div>';
+          await sleep(1300); finish('ok');
+        }));
+      };
+      A();
+    });
+  }
+
+  async function orderRound() {
+    for (;;) {
+      const r = await orderOnce();
+      if (r === 'ok') { hush(); return; }
+      const m = byId[r]; const isNew = record(r); addYears(m.years);
+      const p = winStep({ title: 'АОВНП · Заказ воды',
+        html: `<div class="warn"><b>⚠</b><span>${m.sys}</span></div><div class="pen">Срок ипотеки продлён на ${m.years} лет</div>${isNew ? '<div class="newbadge">Новое уведомление в личном деле</div>' : ''}`,
+        buttons: [['Войти снова', 'primary']] });
+      say(m.angel); await p; hush();
+      setChk(1); await otpRound(1);
+      await winStep({ title: 'АОВНП · Заказ воды', html: `<div class="okmsg">Личность подтверждена.</div><p>Проверки 2–7 засчитаны. Заказ придётся оформить заново.</p>`, buttons: [['Оформить заказ', 'primary']] });
+    }
+  }
+
+  async function workFriday() {
+    S.hasCup = true;
+    await say('Сегодня хороший день. Бутыль почти пустая.', { tap: true });
+    await say('Надо заказать воду. Просто воду.', { tap: true });
+    hush();
+    await winStep({ title: 'АОВНП · Заказ воды',
+      html: `<div class="notice">Для оформления заказа воды необходимо пройти 12 проверок.</div><p class="muted">Это займёт совсем немного вечности.</p>`,
+      buttons: [['Начать', 'primary']] });
+    setChk(1); await otpRound(1);
+    setChk(2);
+    await winStep({ html: `<div class="okmsg">Код принят.</div><p class="muted">Следующий код будет показан в зеркальном отражении.</p>`, buttons: [['Получить код', 'primary']] });
+    await otpRound(3);
+    setChk(3);
+    await agreement('3 403');
+    hush();
+    setChk(4);
+    await say('Я так и не вернул стаканчик.', { tap: true });
+    hush();
+    await lookRound(4);
+    setChk(5); await notDemon();
+    setChk(6); await capRound(1);
+    setChk(7); await capRound(3);
+    await winStep({ title: 'АОВНП · Заказ воды', html: `<div class="okmsg">Проверки 1–7 пройдены.</div><p>Осталось оформить заказ. Сессия оформления ограничена по времени.</p>`,
+      buttons: [['Оформить заказ', 'primary']] });
+    await orderRound();
+    S.chk = 0;
+    const reg = `<div class="okmsg big">Заявка зарегистрирована.</div>
+      <div class="field2"><label>Номер обращения</label><div class="input">77100934-АОВНП</div></div>
+      <div class="field2"><label>Ожидаемое время обработки</label><div class="input">от 40 до 400 рабочих лет</div></div>`;
+    await winStep({ title: 'АОВНП · Заказ воды', html: reg, buttons: [] });
+    await sleep(3200);
+    $('#win').classList.remove('show');
+    await sleep(500);
+    await say('Проходит минута.', { tap: true, who: null });
+    hush();
+    await winStep({ title: 'АОВНП · Отдел гидратации', html: `<div class="notice">Доставка осуществлена по графику.</div><p>Ваша заявка будет учтена при следующей доставке.</p>`, buttons: [] });
+    await sleep(900);
+    await say('Ну. Зато я подтвердил.', { tap: true });
+    hush();
+  }
+
+  async function finale() {
+    S.busy = false;
+    $('#win').classList.remove('show');
+    const pan = $('#pan');
+    await show('scene');
+    await say('Приехали доставщики.', { tap: true, who: null });
+    await say('Лиду уносят. Она пуста и спокойна.', { tap: true, who: null });
+    pan.style.backgroundPosition = '48% 50%';
+    await sleep(900);
+    await say('Новая бутыль с любопытством разглядывает Владимира. Владимир смотрит вслед Лиде.', { tap: true, who: null });
+    pan.style.backgroundPosition = '0% 50%';
+    await sleep(900);
+    await say('До свидания, Лида.', { tap: true });
+    hush();
+    await show('final');
+    await sleep(500);
+    await say('Владимир сам, без нажатия кнопки, наливает Ангелу стакан воды.', { tap: true, who: null });
+    await say('Это единственное действие за неделю, которое произошло без подтверждения.', { tap: true, who: null });
+    hush();
+    $('#kt1').classList.add('show');
+    await sleep(1600);
+    $('#kt2').classList.add('show');
+    await sleep(2200);
+    mom(null, true);
+    await sleep(900);
+    await say('Попил воды, мама. Пока хватит.', { tap: true });
+    momClear(); hush();
+    $('#kt1').classList.remove('show'); $('#kt2').classList.remove('show');
+    P.done = Math.max(P.done, 5); P.end[5] = S.years; saveP();
+    weekEnd();
+  }
+
+  function weekEnd() {
+    const added = S.years - 20000;
+    const line = added <= 100 ? 'Хорошая неделя. Даже подозрительно.'
+      : added <= 500 ? 'Плюс сто лет. Зато своё.'
+      : 'Если пройти достаточно проверок подряд, это уже считается паломничеством?';
+    const c = $('#weekcard');
+    c.innerHTML = `<h2>Рабочая неделя завершена</h2>
+      <div class="wsub">Бонечка и аутентификация вечности</div>
+      <div class="stat"><span>Срок ипотеки</span><b>${fmt(S.years)} лет</b></div>
+      <div class="stat"><span>Добавлено за неделю</span><b>+${fmt(added)} лет</b></div>
+      <div class="stat"><span>Отпуск</span><b>1–14 июля 2340</b></div>
+      <div class="stat"><span>Уведомлений в личном деле</span><b>${seen.size} из ${MSG.length}</b></div>
+      <div class="quote">«${line}»</div>
+      <div class="epi">Владимир помнит всех своих бутылей. Лиду тоже.</div>
+      <div class="btns"></div>
+      <button class="linkbtn" id="toMenu2">Главное меню</button>`;
+    c.querySelector('.btns').append(
+      mkBtn('Начать новую неделю', 'primary', () => runDay(1)),
+      mkBtn('Личное дело', '', openArchive));
+    $('#toMenu2').onclick = () => { resetStage(); refreshTitle(); show('title'); };
+    $('#final').classList.add('ended');
+    c.classList.add('show');
+  }
+
+  // ---------- Fullscreen (only where the browser supports it) ----------
+  (() => {
+    const d = document, el = d.documentElement, b = $('#fsBtn');
+    const can = !!(d.fullscreenEnabled || d.webkitFullscreenEnabled) && !!(el.requestFullscreen || el.webkitRequestFullscreen);
+    if (!can) return;
+    b.classList.add('avail');
+    const isFs = () => !!(d.fullscreenElement || d.webkitFullscreenElement);
+    b.addEventListener('click', async e => {
+      e.stopPropagation();
+      try {
+        if (isFs()) await (d.exitFullscreen ? d.exitFullscreen() : d.webkitExitFullscreen());
+        else await (el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen());
+      } catch (_) {}
+    });
+  })();
+
+  // ---------- End of day & title ----------
+  function endOfDay(d) {
+    const added = S.years - S.dayStart;
+    const line = added === 0 ? 'Хороший день. Даже подозрительно.' : `Плюс ${fmt(added)} лет. Зато своё.`;
+    const c = $('#endcard');
+    c.innerHTML = `<h2>${DAYS[d].name} ${DAYS[d].fin}</h2>
+      <div class="stat"><span>Срок ипотеки</span><b>${fmt(S.years)} лет</b></div>
+      <div class="stat"><span>Добавлено за день</span><b>+${fmt(added)} лет</b></div>
+      <div class="stat"><span>Уведомлений в личном деле</span><b>${seen.size} из ${MSG.length}</b></div>
+      <div class="quote">«${line}»</div>
+      <div class="btns"></div>
+      <button class="linkbtn" id="toMenu">Главное меню</button>
+      ${d === LAST_DAY ? `<div class="next">${NEXT_NOTE}</div>` : ''}`;
+    const box = c.querySelector('.btns');
+    if (d < LAST_DAY) box.appendChild(mkBtn(`Перейти ${DAYS[d + 1].to}`, 'primary', () => runDay(d + 1)));
+    box.appendChild(mkBtn(`Переиграть ${DAYS[d].acc}`, d < LAST_DAY ? '' : 'primary', () => runDay(d)));
+    box.appendChild(mkBtn('Личное дело', '', openArchive));
+    $('#toMenu').onclick = () => { resetStage(); refreshTitle(); show('title'); };
+    $('#evening').classList.add('ended');
+    c.classList.add('show');
+  }
+
+  function refreshTitle() {
+    const weekDone = P.done >= LAST_DAY;
+    const next = weekDone ? 1 : Math.min(P.done + 1, LAST_DAY);
+    const sb = $('#startBtn');
+    sb.textContent = P.done === 0 ? 'Начать рабочий день' : weekDone ? 'Начать новую неделю' : `Продолжить: ${DAYS[next].name.toLowerCase()}`;
+    sb.onclick = () => runDay(next);
+    const chips = $('#dayChips');
+    chips.innerHTML = '';
+    if (P.done > 0) Object.keys(DAYS).map(Number).forEach(d => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (d === next ? ' cur' : '');
+      b.textContent = DAYS[d].name; b.disabled = d > P.done + 1;
+      b.onclick = () => runDay(d);
+      chips.appendChild(b);
+    });
+  }
+
+  refreshCounts(false);
+  refreshTitle();
+})();
+</script>
+</body>
+</html>

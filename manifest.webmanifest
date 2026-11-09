@@ -1,0 +1,13 @@
+{
+  "name": "Бонечка и аутентификация вечности",
+  "short_name": "Бонечка",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#2a2340",
+  "theme_color": "#2a2340",
+  "icons": [
+    { "src": "assets/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
